@@ -33,4 +33,11 @@ void setup() {
 }
 
 void loop() {
+ String mensagem = "";
+ if(Serial.available() > 0){
+  mensagem = Serial.readStringUntil('\n');
+  Serial.println("A mensagem foi: ", mensagem);
+  Serial.println(mensagem);
+ }
+
 }
