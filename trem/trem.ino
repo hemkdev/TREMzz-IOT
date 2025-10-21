@@ -1,15 +1,10 @@
 #include <WiFi.h>
 #include <PubSubClient.h>
+#include <env.h>
 
 WiFiClient espClient;
 PubSubClient mqttClient(espClient);
 
-const String SSID = "FIESC_IOT_EDU";
-const String PASS = "8120gv08";
-
-const String brokerURL = "test.mosquitto.org";
-const int brokerPort = 1883;
-const String topic = "hemk";
 
 const String brokerUser = "";
 const String BrokerPass = "";
@@ -18,7 +13,7 @@ const int ledPin = 2;
 
 void setup() {
   Serial.begin(115200);    //configura a placa pra mostrar na tela
-  WiFi.begin(SSID, PASS);  //tenta conectar na rede
+  WiFi.begin(WIFI_SSID, WIFI_PASS);  //tenta conectar na rede
   Serial.println("Conectando no WiFi");
   Serial.println("Conectado com sucesso");
   mqttClient.setServer(brokerURL.c_str(), brokerPort);
@@ -28,7 +23,7 @@ void setup() {
     Serial.print(".");
     delay(200);
   }
-  mqttClient.subscribe(topic.c_str());
+  mqttClient.subscribe(topicPresence1.c_str());
   mqttClient.setCallback(callback);  // Função ao receber mensagem no tópico
   Serial.println("\n Conectado com sucesso!");
   pinMode(ledPin, OUTPUT);
@@ -46,7 +41,7 @@ void loop() {
   mqttClient.loop();
 }
 
-void callback(char* topic, byte* payload, unsigned long length) {  // Tópico, mensagem em si, tamanho da mensagem
+void callback(char* topicPresence1, byte* payload, unsigned long length) {  // Tópico, mensagem em si, tamanho da mensagem
   String MensagemRecebida = "";
   for (int i = 0; i < length; i++) {
     // Pega cada letra de payload e junta na mensagem
