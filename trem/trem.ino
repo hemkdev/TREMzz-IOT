@@ -1,8 +1,9 @@
 #include <WiFi.h>
 #include <PubSubClient.h>
-#include <env.h>
+#include <WiFiClientSecure.h>
+#include "env.h"
 
-WiFiClient espClient;
+WiFiClientSecure espClient;
 PubSubClient mqttClient(espClient);
 
 
@@ -13,11 +14,12 @@ const int ledPin = 2;
 
 void setup() {
   Serial.begin(115200);    //configura a placa pra mostrar na tela
+  wifiClient.setInsecure();  // Desabilita a verificação de certificado
   WiFi.begin(WIFI_SSID, WIFI_PASS);  //tenta conectar na rede
   Serial.println("Conectando no WiFi");
   Serial.println("Conectado com sucesso");
   mqttClient.setServer(brokerURL.c_str(), brokerPort);
-  String userID = "estação_principal";
+  String userID = "trem";
   userID += String(random(0xffff), HEX);
   while (mqttClient.connect(userID.c_str()) == 0) {
     Serial.print(".");
@@ -34,8 +36,8 @@ void loop() {
   String mensagem = "";  // lê letra por letra e adiciona \n automático no final
   if (Serial.available() > 0) {
     mensagem = Serial.readStringUntil('\n');
-    mensagem = "Hemk: " + mensagem;
-    mqttClient.publish("bia_santos", mensagem.c_str());  // Envia a mensagem pro servidor Tópico
+    mensagem = ": " + mensagem;
+    mqttClient.publish("", mensagem.c_str());  // Envia a mensagem pro servidor Tópico
     Serial.println(mensagem);
   }
   mqttClient.loop();
