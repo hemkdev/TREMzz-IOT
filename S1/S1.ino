@@ -128,6 +128,19 @@ float lerDistancia() {
   return distancia;
 }
 
+float lerTemeperatura() {
+  return temperatura;
+}
+
+float lerUmidade() {
+  return umidade;
+}
+
+float lerIluminacao() {
+  return iluminacao;
+}
+
+
 void loop() {
   // reconecta se necessário
   if (!mqttClient.connected()) {
@@ -145,7 +158,6 @@ void loop() {
   //ler dist
   //if < 10 -> publica alguma msg
   float distancia = lerDistancia();
-  
   if (distancia >= 0) { // se não houve erro
     Serial.print("Distância: ");
     Serial.print(distancia);
@@ -160,14 +172,32 @@ void loop() {
   }
 
   //ler temp -> publica valor
+  float temperatura = lerTemeperatura();
+  mqttClient.publish(topicTemp, String(temperatura).c_str());
+  Serial.print("Temperatura: ");
+  Serial.print(temperatura);
+  Serial.println(" °C");
+
   //ler umid -> publica valor
-  
+  float umidade = lerUmidade();
+  mqttClient.publish(topicUmid, String(umidade).c_str());
+  Serial.print("Umidade: ");
+  Serial.print(umidade);
+  Serial.println(" %");
+
   //ler iluminação
   //if < X -> publica acender
   //else -> publica apagar
+  float iluminacao = lerIluminacao();
+  if (iluminacao < 300) {
+    mqttClient.publish(topicLum, "Acender luz");
+    Serial.println("Iluminação baixa, acender luz");
+  } else {
+    mqttClient.publish(topicLum, "Apagar luz");
+    Serial.println("Iluminação adequada, apagar luz");
+  }
 
   delay(2000);
-
 
 }
 
