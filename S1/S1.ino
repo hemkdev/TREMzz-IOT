@@ -2,6 +2,7 @@
 #include <PubSubClient.h>
 #include <WiFiClientSecure.h>
 #include "env.h"
+#include <DHT.h>
 
 WiFiClientSecure espClient;
 PubSubClient mqttClient(espClient);
@@ -9,7 +10,8 @@ PubSubClient mqttClient(espClient);
 const String brokerUser = "";
 const String BrokerPass = "";
 
-const int ledPin = pino_led; // usa o pino definido em env.h
+DHT dht(pino_dht, DHTTYPE);
+
 
 // estado do piscar (não bloqueante)
 volatile bool blinkRequested = false;
@@ -40,6 +42,7 @@ void reconnect() {
 
 void setup() {
   Serial.begin(115200);
+  dht.begin();
   randomSeed(analogRead(0));
 
   espClient.setInsecure(); // desativa verificação do certificado (somente para testes)
@@ -57,8 +60,8 @@ void setup() {
   mqttClient.setServer(brokerURL, brokerPort);
   reconnect();
 
-  pinMode(ledPin, OUTPUT);
-  digitalWrite(ledPin, LOW);
+  pinMode(pino_led, OUTPUT);
+  digitalWrite(pino_led, LOW);
   // Pinos - Ultrassônico
   pinMode(pino_ultraTrig, OUTPUT);
   pinMode(pino_ultraEcho, INPUT);
@@ -128,15 +131,12 @@ float lerDistancia() {
   return distancia;
 }
 
-float lerTemeperatura() {
-  return temperatura;
-}
-
-float lerUmidade() {
-  return umidade;
-}
 
 float lerIluminacao() {
+  // Leitura direta do LDR. Em ESP32 o ADC padrão é 12 bits (0-4095)
+
+  int raw = analogRead(pino_ldr);
+  iluminacao = raw;
   return iluminacao;
 }
 
@@ -172,14 +172,14 @@ void loop() {
   }
 
   //ler temp -> publica valor
-  float temperatura = lerTemeperatura();
+  float temperatura = dht.readTemperature();
   mqttClient.publish(topicTemp, String(temperatura).c_str());
   Serial.print("Temperatura: ");
   Serial.print(temperatura);
   Serial.println(" °C");
 
   //ler umid -> publica valor
-  float umidade = lerUmidade();
+  float umidade = dht.readHumidity();
   mqttClient.publish(topicUmid, String(umidade).c_str());
   Serial.print("Umidade: ");
   Serial.print(umidade);
@@ -189,12 +189,15 @@ void loop() {
   //if < X -> publica acender
   //else -> publica apagar
   float iluminacao = lerIluminacao();
-  if (iluminacao < 300) {
+  Serial.println(iluminacao);
+  if (iluminacao > 3000) {
     mqttClient.publish(topicLum, "Acender luz");
     Serial.println("Iluminação baixa, acender luz");
+    digitalWrite(pino_led, 1);
   } else {
     mqttClient.publish(topicLum, "Apagar luz");
     Serial.println("Iluminação adequada, apagar luz");
+    digitalWrite(pino_led, 0);
   }
 
   delay(2000);
@@ -222,9 +225,9 @@ void callback(char* topic, byte* payload, unsigned int length) {
   // se for comando para o tópico de controle do LED, processa ON/OFF
   if (strcmp(topic, topicLed) == 0) {
     if (strcasecmp(msg, "ON") == 0 || strcmp(msg, "1") == 0) {
-      digitalWrite(ledPin, HIGH);
+      digitalWrite(pino_led, HIGH);
     } else if (strcasecmp(msg, "OFF") == 0 || strcmp(msg, "0") == 0) {
-      digitalWrite(ledPin, LOW);
+      digitalWrite(pino_led, LOW);
     }
   }
 }
