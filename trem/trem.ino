@@ -1,68 +1,103 @@
-// Bibliotecas e Includes
+
 #include <WiFi.h>
-#include <PubSubClient.h>
+
 #include <WiFiClientSecure.h>
-#include "env.h"
 
-WiFiClientSecure espClient;
-PubSubClient mqttClient(espClient);
+#include <PubSubClient.h>
 
-const int ledPin = 2;
+WiFiClientSecure client;
+
+PubSubClient mqtt(client);
+
+
+const String SSID = "FIESC_IOT_EDU";
+
+const String PASS = "8120gv08";
+
+const int PORT = 8883; 
+
+const String URL = "c2388c77116243a0a57bd57d29c9b376.s1.eu.hivemq.cloud";
+
+
+const String broker_user = "trem"; 
+
+const String broker_pass = "gabriell";
+
+
+const int ledPin1 = 9; 
+
+const int ledPin2 = 17;
+
 
 void setup() {
+ 
+  pinMode(ledPin1, OUTPUT);
+  pinMode(ledPin2, OUTPUT);
 
-  Serial.begin(115200);    
-  espClient.setInsecure();  
-  WiFi.begin(WIFI_SSID, WIFI_PASS);  
-  Serial.println("Conectando no WiFi");
+  
+  client.setInsecure();
+  
+  Serial.begin(115200);
+  
+  Serial.println("Conectando ao Wifi"); 
+ 
+  WiFi.begin(SSID, PASS);
   while (WiFi.status() != WL_CONNECTED) {
-  delay(500);
-  Serial.print(".");
-  }
-  Serial.println("\nConectado com sucesso!");
-
-
-  mqttClient.setServer(BROKER_URL, BROKER_PORT);
-  String userID = "trem";
-  userID += String(random(0xffff), HEX);
-  while (mqttClient.connect(userID.c_str()) == 0) {
     Serial.print(".");
     delay(200);
   }
+  
+  Serial.println("\nConectado!");
+  
+  Serial.println("Conectando ao broker...");
+ 
+  mqtt.setServer(URL.c_str(), PORT);
+  
+  while (!mqtt.connected()) { 
 
-
-  mqttClient.setCallback(callback); 
-  mqttClient.subscribe(TOPIC_PONTEH); 
-  Serial.println("\n Conectado com sucesso!");
-
-
-  pinMode(ledPin, OUTPUT);
-  digitalWrite(ledPin, LOW);
-}
-
-
-void loop() {
-  String mensagem = "";  
-  if (Serial.available() > 0) {
-    mensagem = Serial.readStringUntil('\n');
-    mensagem = ": " + mensagem;
-    mqttClient.publish(TOPIC_STATUS, mensagem.c_str());  
-    Serial.println(mensagem);
+    String ID = "TREM-";
+    ID += String(random(0xffff), HEX);
+    mqtt.connect(ID.c_str(), broker_user.c_str(), broker_pass.c_str());
+    delay(200);
+    Serial.print(".");
   }
-  mqttClient.loop();
+  
+  mqtt.subscribe("trem"); 
+  
+  mqtt.setCallback(callback);
+  Serial.println("\nConectado ao broker com sucesso!");
 }
 
 
-void callback(char* topic, byte* payload, unsigned int length) {  
-  String MensagemRecebida = "";
+void loop() { 
+
+  mqtt.loop();
+  delay(10);
+}
+
+void callback(char* topic, byte* payload, unsigned int length) { 
+  String mensagem = "";
   for (int i = 0; i < length; i++) {
-    
-    MensagemRecebida += (char)payload[i];
+    mensagem += (char)payload[i];
   }
-  Serial.println(MensagemRecebida);
 
-
-  digitalWrite(2, HIGH);  
-  delay(1000);            
-  digitalWrite(2, LOW);
+  Serial.print("Recebido:  ");
+  Serial.println(mensagem);
+  
+  int vel = mensagem.toInt();
+  
+  if (vel < 0) { 
+    digitalWrite(ledPin1, HIGH);
+    digitalWrite(ledPin2, LOW);
+  }
+  
+  else if (vel > 0) { 
+    digitalWrite(ledPin1, LOW);
+    digitalWrite(ledPin2, HIGH);
+  }
+  
+  else { 
+    digitalWrite(ledPin1, LOW);
+    digitalWrite(ledPin2, LOW);
+  }
 }
