@@ -16,12 +16,12 @@ const String PASS = "8120gv08";
 
 const int PORT = 8883; 
 
-const String URL = "c2388c77116243a0a57bd57d29c9b376.s1.eu.hivemq.cloud";
+const String URL = "066fc2635b7c4272a28d66b64f3a555a.s1.eu.hivemq.cloud";
 
 
-const String broker_user = "trem"; 
+const String broker_user = "gabespancado"; 
 
-const String broker_pass = "gabriell";
+const String broker_pass = "Guisoco123";
 
 
 const int ledPin1 = 9; 
